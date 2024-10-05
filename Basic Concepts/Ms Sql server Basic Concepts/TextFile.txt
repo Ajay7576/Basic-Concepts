@@ -1,0 +1,81 @@
+﻿Basic SQL Server Questions
+
+1. What is SQL Server?
+Ans:- A relational database management system (RDBMS) developed by Microsoft, used to store and retrieve data as requested by other software applications.
+
+2.What is a Database?
+Ans:- A structured collection of data stored in a way that allows for easy access, management, and updating.
+
+3.What is a Table?
+Ans :- A collection of related data entries in a database, organized in rows and columns.
+
+4.What are Rows and Columns?
+
+Ans:- Row: A single record in a table.
+Column: A field in a table that defines the type of data stored in each record.
+
+5.What is a Primary Key?
+Ans:- A unique identifier for a row in a table. No two rows can have the same primary key value.
+
+6. What is a Foreign Key?
+Ans:- A column or set of columns that establishes a link between data in two tables, ensuring referential integrity.
+
+7.What are SQL Data Types?
+Ans:- Types that define the kind of data that can be stored in a column (e.g., INT, VARCHAR, DATETIME, etc.).
+
+8. What is a View?
+Ans:- A virtual table based on the result set of a SQL query. It can simplify complex queries and provide a layer of security.
+
+9.What is a Stored Procedure?
+Ans:- A precompiled collection of SQL statements that can be executed as a single call to perform operations in the database.
+
+10.What is an Index?
+Ans:- A database object that improves the speed of data retrieval operations on a table, similar to an index in a book.
+
+11.What is Normalization?
+Ans:- The process of organizing data in a database to reduce redundancy and improve data integrity.
+
+12.What are the Different Types of Joins?
+Ans:-
+
+INNER JOIN: Returns records that have matching values in both tables.
+LEFT JOIN: Returns all records from the left table and matched records from the right table.
+RIGHT JOIN: Returns all records from the right table and matched records from the left table.
+FULL OUTER JOIN: Returns all records when there is a match in either left or right table records.
+
+13.What is a Transaction?
+Ans:- A sequence of operations performed as a single logical unit of work, which must either all succeed or all fail.
+
+14.What is SQL Injection?
+Ans:- A code injection technique that exploits a security vulnerability in an application's software by executing malicious SQL statements.
+
+15.What is the Difference Between DELETE and TRUNCATE?
+Ans:-
+DELETE: A DML command that removes rows from a table based on a condition and can be rolled back.
+TRUNCATE: A DDL command that removes all rows from a table without logging individual row deletions; it cannot be rolled back.
+
+16.What is a Temporary Table?
+Ans:- A table that is created temporarily to store data for the duration of a session or a specific task.
+
+17. What are Aggregate Functions?
+Ans:- Functions that perform calculations on a set of values and return a single value, such as SUM(), AVG(), COUNT(), etc.
+
+18.What is the Difference Between UNION and UNION ALL?
+Ans:-
+UNION: Combines the results of two or more SELECT statements and removes duplicates.
+UNION ALL: Combines the results of two or more SELECT statements and includes duplicates.
+
+19.What is a Trigger?
+Ans:- A special type of stored procedure that automatically executes in response to certain events on a table (e.g., INSERT, UPDATE, DELETE).
+
+20.How do you Back Up a Database?
+Ans:- By using SQL Server Management Studio or executing a T-SQL command such as BACKUP DATABASE.
+
+21. What is Subquery?
+Ans:- A subquery is a SQL query nested inside another SQL query. It is used to perform operations that depend on the results of another query
+
+22. What is Unique Key?
+Ans. A unique key is a constraint in SQL that ensures all values in a column are unique across the table. Unlike a primary key, a unique key can accept null values
+
+23. What is Joins?
+Ans:- Joins are used in SQL to combine records from two or more tables based on related columns

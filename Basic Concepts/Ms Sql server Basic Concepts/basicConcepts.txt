@@ -1,0 +1,434 @@
+﻿ 
+      Sql Sever Tips And Tricks
+
+ ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+   CREATE DATABASE DB_NAME;
+
+   ALTER DATABASE old_database_name MODIFY NAME = new_database_name;  
+
+   use DB_NAME (Use Specific Database for work)
+
+   SELECT name FROM master.dbo.sysdatabases (Check databases Names)
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// I create a Employee table and I apply FOREIGN KEY With Designation table
+
+
+      CREATE TABLE department (
+       id INT IDENTITY(1,1) PRIMARY KEY,
+       name VARCHAR(50) NOT NULL
+      );
+
+     CREATE TABLE designation (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    department_ID INT NOT NULL,
+    FOREIGN KEY (department_ID) REFERENCES department(id)
+   );
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ --- Add Column
+  
+   ALTER TABLE TableName
+   ADD Column_Name DataType;
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--- Remove Column
+
+   ALTER TABLE Employees
+   DROP COLUMN Age;
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+   ---- Rename Column 
+
+  EXEC sp_rename 'TableName.OldColumnName', 'NewColumnName', 'COLUMN';
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-------  Declare Variable And Return Result in  Json Formet
+
+
+        DECLARE  @DATA NVARCHAR(MAX) 
+	   DECLARE  @MAIN_DATA NVARCHAR(MAX)
+
+	   SELECT @DATA = (
+            SELECT * FROM TableName 
+            WHERE 
+                id = @Id OR ID IS NULL
+            FOR JSON AUTO, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES
+        );
+
+	SET @MAIN_DATA= '{"data":['+ISNULL(@DATA,'')+']}'  
+  
+	SELECT @MAIN_DATA
+
+OR  ------------------------------------------------------------
+
+
+     DECLARE @status int, @status_message nvarchar(100)
+
+	Set @status=2
+	set @status_message='Updated'
+			
+     SELECT @status AS Status, @status_message AS StatusMessage
+     FOR JSON PATH, WITHOUT_ARRAY_WRAPPER;
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------
+
+ ----------  IF Else Conditions and Try catch block in Ms sql server
+
+
+BEGIN TRY
+    -- IF the record exists, perform an UPDATE
+    IF EXISTS (SELECT * FROM TableName WHERE Id = @ID)
+    BEGIN
+        UPDATE TableName
+        SET ColumnName = 'NewValue'
+        WHERE Id = @ID;
+    END
+    ELSE
+    BEGIN
+        -- Optionally, handle the case where the record does not exist
+        PRINT 'Record with the specified ID does not exist.';
+    END
+END TRY
+BEGIN CATCH
+    -- Handle the error
+    DECLARE @ErrorMessage NVARCHAR(4000), @ErrorSeverity INT, @ErrorState INT;
+
+    -- Get details of the error
+    SELECT @ErrorMessage = ERROR_MESSAGE(),
+           @ErrorSeverity = ERROR_SEVERITY(),
+           @ErrorState = ERROR_STATE();
+
+    -- Print the error details
+    RAISERROR(@ErrorMessage, @ErrorSeverity, @ErrorState);
+END CATCH;
+
+
+
+
+--------------------------------------------------------------------------------------------------------------
+
+DECLARE @json NVARCHAR(MAX) = '[
+    {"answerId": 1, "answer": "Answer 1", "questionId": 101, "starRating": 5, "createdBy": 1001},
+    {"answerId": 2, "answer": "Answer 2", "questionId": 102, "starRating": 4, "createdBy": 1002}
+]';
+
+
+		 
+CREATE PROCEDURE SaveAnswerDataFromJson
+    @json NVARCHAR(MAX),
+    @LoggedInUserId BIGINT,
+    @ReviewId BIGINT
+AS
+
+BEGIN
+
+    IF OBJECT_ID('dbo.tempAnswers', 'U') IS NOT NULL
+    DROP TABLE dbo.tempAnswers;
+
+    -- Declare the temp table to store parsed JSON data
+
+    CREATE TABLE #tempAnswers (
+        answerId BIGINT,
+        answer NVARCHAR(MAX),
+        questionId BIGINT,
+        starRating INT,
+        createdBy BIGINT
+    );
+    
+    -- Parse the JSON input and insert the data into the temp table
+
+    INSERT INTO #tempAnswers (answerId, answer, questionId, starRating, createdBy)
+    SELECT answerId, answer, questionId, starRating, createdBy
+    FROM OPENJSON(@json)
+    WITH (
+        answerId BIGINT '$.answerId',
+        answer NVARCHAR(MAX) '$.answer',
+        questionId BIGINT '$.questionId',
+        starRating INT '$.starRating',
+        createdBy BIGINT '$.createdBy'
+    );
+
+
+
+    -- Start processing the data from the temp table
+
+    WHILE (SELECT COUNT(*) FROM #tempAnswers) > 0
+    BEGIN
+        DECLARE @tempanswerId BIGINT, 
+                @tempanswer NVARCHAR(MAX), 
+                @tempquestionId BIGINT, 
+                @tempstarRating INT, 
+                @tempcreatedBy BIGINT;
+
+        -- Fetch the first row of data
+
+        SELECT TOP 1 @tempanswerId = answerId,
+                     @tempanswer = answer,
+                     @tempquestionId = questionId,
+                     @tempstarRating = starRating,
+                     @tempcreatedBy = createdBy
+        FROM #tempAnswers;
+
+        -- Check if the answer already exists in the Questionanswer table
+
+        IF EXISTS(SELECT answer_id FROM Questionanswer WHERE answer_id = @tempanswerId AND created_by = @tempcreatedBy)
+        BEGIN
+            -- Update the existing record
+            UPDATE a
+            SET 
+                a.answer = @tempanswer,
+                a.question_bank_id = @tempquestionId,
+                a.review_id = @ReviewId,
+                a.status_id = 1001,
+                a.star_rating = @tempstarRating,
+                a.modified_at = GETUTCDATE(),
+                a.modified_by = @LoggedInUserId
+            FROM Questionanswer a
+            WHERE a.answer_id = @tempanswerId;
+        END
+        ELSE
+        BEGIN
+            -- Insert a new record
+
+            INSERT INTO Questionanswer (answer, question_bank_id, review_id, status_id, star_rating, created_at, created_by)
+            VALUES (
+                @tempanswer, 
+                @tempquestionId, 
+                @ReviewId, 
+                1001, 
+                @tempstarRating, 
+                GETUTCDATE(), 
+                @LoggedInUserId
+            );
+        END;
+
+        -- Delete the processed row from the temp table
+        DELETE FROM #tempAnswers WHERE answerId = @tempanswerId;
+    END;
+
+    
+    END;
+   GO
+
+	
+---------------------------------------------------------------------------------------------------------------------------------
+	
+	 DECLARE @DATA NVARCHAR(MAX)
+         DECLARE @MAIN_DATA NVARCHAR(MAX)
+	
+       ;with CTE as()
+   	SELECT  @DATA=(
+		select * from CTE ORDER BY Column_Name DESC
+		FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES)
+
+	SET @MAIN_DATA= '{"data":['+ISNULL(@DATA,'')+']}'  
+ 
+	SELECT @MAIN_DATA
+	
+ ------------------------------------------------------------------------------------------------------------------------------
+       ---  Column NOT Empty and NUll
+
+          WHERE Comment IS NOT NULL 
+         AND LTRIM(RTRIM(Comment)) <> '';
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+
+
+BEGIN TRANSACTION;
+
+UPDATE Employees
+SET LastName = 'Miller'
+WHERE EmployeeID = 3;
+
+-- Rollback the transaction to undo the changes
+ROLLBACK;
+
+
+
+
+
+
+
+------------------------------------------------------------------------------------------------------------------
+## Json Concepts -- 
+
+--create table #employees(employe_id int primary key,employe_name nvarchar(100),salary Decimal(18,2),department nvarchar(50))
+
+--create table #projects( project_id int,project_name nvarchar(50),employe_id int)
+
+--  drop table #employees
+--  drop table #projects
+--  truncate table #employees
+--  truncate table #projects
+
+--insert into #employees(employe_id,employe_id,salary,department)
+--insert into #projects(project_id, project_name,employe_id)
+
+DECLARE @json NVARCHAR(MAX) = N'{
+    "Employees": [
+        {
+            "EmployeeId": 1,
+            "EmployeeName": "Alice",
+            "Salary": 60000,
+            "Department": "HR",
+            "Projects": [
+                {"ProjectId": 101, "ProjectName": "Recruitment"},
+                {"ProjectId": 102, "ProjectName": "Onboarding"}
+            ]
+        },
+        {
+            "EmployeeId": 2,
+            "EmployeeName": "Bob",
+            "Salary": 50000,
+            "Department": "IT",
+            "Projects": [
+                {"ProjectId": 201, "ProjectName": "Website Development"}
+            ]
+        },
+        {
+            "EmployeeId": 3,
+            "EmployeeName": "Alice",
+            "Salary": 70000,
+            "Department": "Finance",
+            "Projects": [
+                {"ProjectId": 301, "ProjectName": "Budget Planning"}
+            ]
+        },
+        {
+            "EmployeeId": 4,
+            "EmployeeName": "Charlie",
+            "Salary": 55000,
+            "Department": "IT",
+            "Projects": [
+                {"ProjectId": 401, "ProjectName": "App Development"},
+                {"ProjectId": 402, "ProjectName": "System Upgrade"}
+            ]
+        },
+        {
+            "EmployeeId": 5,
+            "EmployeeName": "Alice",
+            "Salary": 62000,
+            "Department": "Marketing",
+            "Projects": [
+                {"ProjectId": 501, "ProjectName": "Ad Campaign"}
+            ]
+        }
+    ]
+}';
+
+ insert into #employees(employe_id,employe_name,salary,department)
+select EmployeeId,EmployeeName,Salary,Departement from
+openjson(@json,'$.Employees')
+with(
+  EmployeeId int '$.EmployeeId',
+  EmployeeName nvarchar(200) '$.EmployeeName',
+  Salary decimal(18,2) '$.Salary',
+  Departement nvarchar(50) '$.Department'
+);
+
+
+insert into #projects(project_id,project_name,employe_id)
+
+select Projects.ProjectId,Projects.ProjectName ,emp.EmployeeId from openjson(@json,'$.Employees')
+with(
+  EmployeeId int ,
+  Projects nvarchar(max) As json
+) as emp 
+cross apply openjson(emp.Projects)
+with(
+   ProjectId int '$.ProjectId',
+   ProjectName nvarchar(50) '$.ProjectName'
+) As Projects
+
+select * from #employees
+select * from #projects
+
+
+---------------------------------------------------------------------------------------------------------------------
+Employee table ---
+
+## Practise Duplicate count find and second highest salary 
+
+
+
+-- 1. Create Temporary Table
+
+CREATE TABLE #Employees (
+    EmployeeId INT PRIMARY KEY,       -- Unique identifier for each employee
+    EmployeeName NVARCHAR(100),       -- Column for the employee's name
+    Salary DECIMAL(18, 2),            -- Column for the employee's salary
+    Department NVARCHAR(50)           -- Additional column for the department
+);
+
+ --IF OBJECT_ID('tempdb..#Employees') IS NOT NULL
+  -- DROP TABLE #Employees;
+
+--TRUNCATE TABLE #Employees;
+
+ -- JSON Data Declaration
+DECLARE @json NVARCHAR(MAX) = N'[
+    {"EmployeeId": 1, "EmployeeName": "Alice", "Salary": 60000, "Department": "HR"},
+    {"EmployeeId": 2, "EmployeeName": "Bob", "Salary": 50000, "Department": "IT"},
+    {"EmployeeId": 3, "EmployeeName": "Charlie", "Salary": 70000, "Department": "Finance"},
+    {"EmployeeId": 4, "EmployeeName": "Alice", "Salary": 62000, "Department": "Marketing"}  
+]';
+
+-- Insert Data into Temporary Table
+
+INSERT INTO #Employees (EmployeeId, EmployeeName, Salary, Department)
+SELECT 
+    EmployeeId, 
+    EmployeeName, 
+    Salary, 
+    Department
+FROM 
+    OPENJSON(@json)
+    WITH (
+        EmployeeId INT '$.EmployeeId',
+        EmployeeName NVARCHAR(100) '$.EmployeeName',
+        Salary DECIMAL(18, 2) '$.Salary',
+        Department NVARCHAR(50) '$.Department'
+    );
+
+-- Select All Employees
+  select * from #Employees
+
+ --- Find Duplicate Employee Names
+
+SELECT *FROM (
+    SELECT *,ROW_NUMBER() OVER (PARTITION BY EmployeeName ORDER BY EmployeeId) AS rn FROM #Employees 
+) AS subquery
+WHERE rn > 1;
+
+
+select *, rank() OVER (PARTITION BY EmployeeName ORDER BY EmployeeId) AS rn from #Employees 
+select MAX(salary) as SecondHighestSalary from #Employees where Salary < (select MAX(salary) from  #Employees);
+
+-- Delete Duplicate Employees
+
+DELETE FROM #Employees 
+WHERE EmployeeId IN (
+  SELECT EmployeeId FROM ( SELECT EmployeeId, ROW_NUMBER() OVER (PARTITION BY EmployeeName ORDER BY EmployeeId) AS rn FROM #Employees
+    ) AS subquery
+    WHERE rn > 1
+);
+
+ --- Get Row Numbers with all list
+SELECT *, ROW_NUMBER() OVER (PARTITION BY EmployeeName ORDER BY EmployeeId ) AS rn FROM #Employees
+
+---  Count of Employees with Duplicate Names
+SELECT EmployeeName, COUNT(*) AS EmployeeCount FROM  #Employees GROUP BY EmployeeName HAVING COUNT(*) > 1;
+
+----------------------------------------------------------------------------------------------------------------------------
