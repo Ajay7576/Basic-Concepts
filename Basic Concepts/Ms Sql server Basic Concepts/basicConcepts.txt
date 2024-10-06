@@ -262,6 +262,86 @@ ROLLBACK;
 
 
 ------------------------------------------------------------------------------------------------------------------
+
+
+
+---------------------------------------------------------------------------------------------------------------------
+Employee table ---
+
+## Practise Duplicate count find and second highest salary 
+
+
+
+-- 1. Create Temporary Table
+
+CREATE TABLE #Employees (
+    EmployeeId INT PRIMARY KEY,       -- Unique identifier for each employee
+    EmployeeName NVARCHAR(100),       -- Column for the employee's name
+    Salary DECIMAL(18, 2),            -- Column for the employee's salary
+    Department NVARCHAR(50)           -- Additional column for the department
+);
+
+ --IF OBJECT_ID('tempdb..#Employees') IS NOT NULL
+  -- DROP TABLE #Employees;
+
+--TRUNCATE TABLE #Employees;
+
+ -- JSON Data Declaration
+DECLARE @json NVARCHAR(MAX) = N'[
+    {"EmployeeId": 1, "EmployeeName": "Alice", "Salary": 60000, "Department": "HR"},
+    {"EmployeeId": 2, "EmployeeName": "Bob", "Salary": 50000, "Department": "IT"},
+    {"EmployeeId": 3, "EmployeeName": "Charlie", "Salary": 70000, "Department": "Finance"},
+    {"EmployeeId": 4, "EmployeeName": "Alice", "Salary": 62000, "Department": "Marketing"}  
+]';
+
+-- Insert Data into Temporary Table
+
+INSERT INTO #Employees (EmployeeId, EmployeeName, Salary, Department)
+SELECT 
+    EmployeeId, 
+    EmployeeName, 
+    Salary, 
+    Department
+FROM 
+    OPENJSON(@json)
+    WITH (
+        EmployeeId INT '$.EmployeeId',
+        EmployeeName NVARCHAR(100) '$.EmployeeName',
+        Salary DECIMAL(18, 2) '$.Salary',
+        Department NVARCHAR(50) '$.Department'
+    );
+
+-- Select All Employees
+  select * from #Employees
+
+ --- Find Duplicate Employee Names
+
+SELECT *FROM (
+    SELECT *,ROW_NUMBER() OVER (PARTITION BY EmployeeName ORDER BY EmployeeId) AS rn FROM #Employees 
+) AS subquery
+WHERE rn > 1;
+
+
+select *, rank() OVER (PARTITION BY EmployeeName ORDER BY EmployeeId) AS rn from #Employees 
+select MAX(salary) as SecondHighestSalary from #Employees where Salary < (select MAX(salary) from  #Employees);
+
+-- Delete Duplicate Employees
+
+DELETE FROM #Employees 
+WHERE EmployeeId IN (
+  SELECT EmployeeId FROM ( SELECT EmployeeId, ROW_NUMBER() OVER (PARTITION BY EmployeeName ORDER BY EmployeeId) AS rn FROM #Employees
+    ) AS subquery
+    WHERE rn > 1
+);
+
+ --- Get Row Numbers with all list
+SELECT *, ROW_NUMBER() OVER (PARTITION BY EmployeeName ORDER BY EmployeeId ) AS rn FROM #Employees
+
+---  Count of Employees with Duplicate Names
+SELECT EmployeeName, COUNT(*) AS EmployeeCount FROM  #Employees GROUP BY EmployeeName HAVING COUNT(*) > 1;
+
+----------------------------------------------------------------------------------------------------------------------------
+
 ## Json Concepts -- 
 
 --create table #employees(employe_id int primary key,employe_name nvarchar(100),salary Decimal(18,2),department nvarchar(50))
@@ -354,81 +434,3 @@ with(
 
 select * from #employees
 select * from #projects
-
-
----------------------------------------------------------------------------------------------------------------------
-Employee table ---
-
-## Practise Duplicate count find and second highest salary 
-
-
-
--- 1. Create Temporary Table
-
-CREATE TABLE #Employees (
-    EmployeeId INT PRIMARY KEY,       -- Unique identifier for each employee
-    EmployeeName NVARCHAR(100),       -- Column for the employee's name
-    Salary DECIMAL(18, 2),            -- Column for the employee's salary
-    Department NVARCHAR(50)           -- Additional column for the department
-);
-
- --IF OBJECT_ID('tempdb..#Employees') IS NOT NULL
-  -- DROP TABLE #Employees;
-
---TRUNCATE TABLE #Employees;
-
- -- JSON Data Declaration
-DECLARE @json NVARCHAR(MAX) = N'[
-    {"EmployeeId": 1, "EmployeeName": "Alice", "Salary": 60000, "Department": "HR"},
-    {"EmployeeId": 2, "EmployeeName": "Bob", "Salary": 50000, "Department": "IT"},
-    {"EmployeeId": 3, "EmployeeName": "Charlie", "Salary": 70000, "Department": "Finance"},
-    {"EmployeeId": 4, "EmployeeName": "Alice", "Salary": 62000, "Department": "Marketing"}  
-]';
-
--- Insert Data into Temporary Table
-
-INSERT INTO #Employees (EmployeeId, EmployeeName, Salary, Department)
-SELECT 
-    EmployeeId, 
-    EmployeeName, 
-    Salary, 
-    Department
-FROM 
-    OPENJSON(@json)
-    WITH (
-        EmployeeId INT '$.EmployeeId',
-        EmployeeName NVARCHAR(100) '$.EmployeeName',
-        Salary DECIMAL(18, 2) '$.Salary',
-        Department NVARCHAR(50) '$.Department'
-    );
-
--- Select All Employees
-  select * from #Employees
-
- --- Find Duplicate Employee Names
-
-SELECT *FROM (
-    SELECT *,ROW_NUMBER() OVER (PARTITION BY EmployeeName ORDER BY EmployeeId) AS rn FROM #Employees 
-) AS subquery
-WHERE rn > 1;
-
-
-select *, rank() OVER (PARTITION BY EmployeeName ORDER BY EmployeeId) AS rn from #Employees 
-select MAX(salary) as SecondHighestSalary from #Employees where Salary < (select MAX(salary) from  #Employees);
-
--- Delete Duplicate Employees
-
-DELETE FROM #Employees 
-WHERE EmployeeId IN (
-  SELECT EmployeeId FROM ( SELECT EmployeeId, ROW_NUMBER() OVER (PARTITION BY EmployeeName ORDER BY EmployeeId) AS rn FROM #Employees
-    ) AS subquery
-    WHERE rn > 1
-);
-
- --- Get Row Numbers with all list
-SELECT *, ROW_NUMBER() OVER (PARTITION BY EmployeeName ORDER BY EmployeeId ) AS rn FROM #Employees
-
----  Count of Employees with Duplicate Names
-SELECT EmployeeName, COUNT(*) AS EmployeeCount FROM  #Employees GROUP BY EmployeeName HAVING COUNT(*) > 1;
-
-----------------------------------------------------------------------------------------------------------------------------

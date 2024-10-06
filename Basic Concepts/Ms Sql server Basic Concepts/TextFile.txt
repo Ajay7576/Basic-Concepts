@@ -79,3 +79,24 @@ Ans. A unique key is a constraint in SQL that ensures all values in a column are
 
 23. What is Joins?
 Ans:- Joins are used in SQL to combine records from two or more tables based on related columns
+
+---------------------------------------------------------------------------------------------------------------------
+
+Reducing redundancy in MS SQL Server involves minimizing duplicate data to improve efficiency and maintain data integrity. Here are some key strategies:
+
+Normalization: Organize tables to reduce duplication. This typically involves dividing large tables into smaller ones and establishing relationships using foreign keys.
+
+Use of Primary Keys: Ensure each table has a primary key to uniquely identify each record, preventing duplicate entries.
+
+Foreign Keys: Implement foreign key constraints to maintain referential integrity between related tables.
+
+Indexes: Create indexes on columns that frequently appear in queries to speed up data retrieval and reduce the need for duplicate data storage.
+
+Data Deduplication: Periodically clean the database to remove duplicate records using SQL queries or data cleansing tools.
+
+Views: Use views to present data in a way that combines information from multiple tables without duplicating data.
+
+Stored Procedures: Use stored procedures for data manipulation, which can help enforce business rules and reduce redundant operations
+
+
+

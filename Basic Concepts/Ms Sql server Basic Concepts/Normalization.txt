@@ -1,0 +1,168 @@
+﻿Normalization:-
+
+Normalization is the process of organizing data in a database to reduce redundancy and improve data integrity. 
+Below is an explanation of different normalization forms along with examples of table structures.
+
+
+1. First Normal Form (1NF)
+2. Second Normal Form (2NF)
+3. Third Normal Form (3NF)
+
+
+1. First Normal Form (1NF)
+
+
+Example: Suppose you have a table storing employee information.
+
+Before Normalization (Not in 1NF)
+
+--------------------------------------------------------------------------
+EmployeeID	EmployeeName	         Projects                         
+1	         Alice	                 Recruitment, Onboarding
+2	         Bob	                 Website Development
+3	         Charlie	         Budget Planning, App Development
+--------------------------------------------------------------------------
+
+After Normalization (In 1NF)
+
+EmployeeID	EmployeeName	Project
+1	         Alice         	Recruitment
+1	         Alice	        Onboarding
+2	         Bob	        Website Development
+3	         Charlie	Budget Planning
+3	         Charlie	App Development
+--------------------------------------------------------------------------
+
+2,  Second Normal Form (2NF)
+
+ Before Normalization (Not in 2NF)
+
+------------------------------------------------------------------------------
+EmployeeID   EmployeeName	   Project	        Salary 	 Department
+1	     Alice	           Recruitment	        60000	  HR
+1	     Alice	           Onboarding	        60000	  HR
+2	     Bob	           Website Development	50000	  IT
+3	    Charlie	           Budget Planning	55000	  Finance
+3	    Charlie	           App Development	55000	  Finance
+-------------------------------------------------------------------------------
+
+After Normalization (In 2NF)
+
+Employee Table:
+------------------------------------------------------
+EmployeeID	EmployeeName	Salary	  Department
+1	         Alice	         60000	   HR
+2	         Bob	         50000	   IT
+3	         Charlie	 55000	   Finance
+------------------------------------------------------
+Project Table:
+---------------------------------------------------------------------------------
+EmployeeID	Project
+1	        Recruitment
+1	        Onboarding
+2	        Website Development
+3	        Budget Planning
+3	        App Development
+
+---------------------------------------------------------------------------------
+
+3. Third Normal Form (3NF)
+
+Before Normalization (Not in 3NF)
+
+Employee Table (from 2NF):
+
+--------------------------------------------------------------------------------
+EmployeeID	EmployeeName	Salary	 Department     DepartmentHead
+1	         Alice	        60000	     HR           John Doe
+2	         Bob	        50000	     IT	          Jane Smith
+3	         Charlie	55000	     Finance	  Mark Johnson
+----------------------------------------------------------------------------------
+After Normalization (In 3NF)
+
+Employee Table:
+----------------------------------------------------------------------
+EmployeeID	EmployeeName	Salary	  Department
+1	        Alice	         60000	   HR
+2	        Bob	         50000	   IT
+3	        Charlie	         55000	   Finance
+
+Department Table:
+
+----------------------------------------------------------------------
+Department	DepartmentHead
+HR	        John Doe
+IT	        Jane Smith
+Finance	    Mark Johnson
+
+--------------------------------------------------------------------------------------------------
+
+Normalization: Organize tables to reduce duplication. This typically involves dividing large tables into smaller ones and establishing relationships using foreign keys.
+
+-- Step 1: Unnormalized Table (starting point)
+CREATE TABLE #EmployeeProjects (
+    EmployeeID INT,
+    EmployeeName NVARCHAR(100),
+    Salary DECIMAL(18,2),
+    Department NVARCHAR(50),
+    ProjectID INT,
+    ProjectName NVARCHAR(100),
+    DepartmentHead NVARCHAR(100)
+);
+
+-- Step 2: 1NF (splitting employees and projects)
+CREATE TABLE #Employees (
+    EmployeeID INT PRIMARY KEY,
+    EmployeeName NVARCHAR(100),
+    Salary DECIMAL(18,2),
+    Department NVARCHAR(50)
+);
+
+CREATE TABLE #Projects (
+    ProjectID INT PRIMARY KEY,
+    ProjectName NVARCHAR(100),
+    EmployeeID INT
+);
+
+INSERT INTO #Employees (EmployeeID, EmployeeName, Salary, Department)
+VALUES 
+(1, 'Alice', 60000, 'HR'),
+(2, 'Bob', 50000, 'IT'),
+(3, 'Charlie', 55000, 'Finance');
+
+INSERT INTO #Projects (ProjectID, ProjectName, EmployeeID)
+VALUES 
+(101, 'Recruitment', 1),
+(102, 'Onboarding', 1),
+(201, 'Website Development', 2),
+(301, 'Budget Planning', 3),
+(302, 'App Development', 3);
+
+-- Step 3: 2NF (moving department head to a new table)
+CREATE TABLE #Departments (
+    Department NVARCHAR(50) PRIMARY KEY,
+    DepartmentHead NVARCHAR(100)
+);
+
+INSERT INTO #Departments (Department, DepartmentHead)
+VALUES 
+('HR', 'John Doe'),
+('IT', 'Jane Smith'),
+('Finance', 'Mark Johnson');
+
+-- Step 4: Query all tables
+SELECT * FROM #Employees;
+SELECT * FROM #Projects;
+SELECT * FROM #Departments;
+---------------------------------------------------------------------------------------------------------------------
+ ### How to Reduce Duplicacy
+
+1. Normalization: You could normalize the data by ensuring that each customer is entered only once.
+2. Primary Key: Set CustomerID as the primary key to enforce uniqueness.
+3.Data Cleaning: Identify duplicates using a query:
+SELECT Name, Email, COUNT(*) FROM Customers GROUP BY Name, Email 
+4.Removing Duplicates: After identifying duplicates, you can remove them with a DELETE statement, keeping only one instance of each.HAVING COUNT(*) > 1;
+
+
+
+
